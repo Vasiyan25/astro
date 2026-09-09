@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./public/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Jyothisha Calculation Pipeline</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">Jyothisha workspace</span>
+          <h1>Four-Stage Calculation Pipeline</h1>
+        </div>
+        <span class="status"><i></i> calculation engine online</span>
+      </header>
+
+      <section class="intro">
+        <p class="kicker">Core pipeline · phase 1</p>
+        <h2>Normal Time → LMT → Udayadhi → Lagna → Nakshatra Pada</h2>
+        <p>
+          Enter a birth moment and exact coordinates. Each section below displays its inputs,
+          verified calculation, and expandable audit details. Values pass from one card to the
+          next without intermediate rounding.
+        </p>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- BIRTH DETAILS INPUT                                              -->
+      <!-- ================================================================ -->
+      <section class="panel birth-panel">
+        <div class="panel-heading">
+          <span class="step badge-input">IN</span>
+          <div>
+            <h3>Birth Details</h3>
+            <p>Global inputs used by all four sections</p>
+          </div>
+        </div>
+
+        <form id="birth-form" class="birth-form" autocomplete="off">
+          <div class="form-grid">
+            <label>
+              Date
+              <input id="input-date" type="date" required />
+            </label>
+
+            <label>
+              Birth Time
+              <div class="time-input-row">
+                <input
+                  id="input-time-hour"
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  max="12"
+                  step="1"
+                  required
+                  placeholder="HH"
+                  aria-label="Birth time hour"
+                />
+                <span class="time-sep">:</span>
+                <input
+                  id="input-time-minute"
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  max="59"
+                  step="1"
+                  required
+                  placeholder="MM"
+                  aria-label="Birth time minute"
+                />
+                <span class="time-sep">:</span>
+                <input
+                  id="input-time-second"
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  max="59"
+                  step="1"
+                  required
+                  placeholder="SS"
+                  aria-label="Birth time second"
+                />
+                <select id="input-time-ampm" aria-label="Birth time AM or PM" required>
+                  <option value="" selected disabled>AM/PM</option>
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+            </label>
+
+            <label>
+              Birthplace
+              <input id="input-place" type="text" placeholder="e.g. Bengaluru, India" />
+            </label>
+
+            <label>
+              Time Zone
+              <select id="input-timezone">
+                <option value="330" selected>IST · Asia/Kolkata (UTC+05:30)</option>
+                <option value="0">UTC / GMT (UTC+00:00)</option>
+                <option value="-300">EST · America/New_York (UTC-05:00)</option>
+                <option value="-480">PST · America/Los_Angeles (UTC-08:00)</option>
+                <option value="60">CET · Europe/Berlin (UTC+01:00)</option>
+                <option value="345">NPT · Asia/Kathmandu (UTC+05:45)</option>
+                <option value="480">SGT · Asia/Singapore (UTC+08:00)</option>
+                <option value="540">JST · Asia/Tokyo (UTC+09:00)</option>
+                <option value="-240">AST · America/Halifax (UTC-04:00)</option>
+                <option value="630">MYT · Asia/Yangon (UTC+06:30)</option>
+              </select>
+            </label>
+
+            <label>
+              Latitude (decimal degrees)
+              <input id="input-latitude" type="number" step="0.000001" min="-90" max="90" required />
+              <small class="field-hint">North positive. Bengaluru ≈ 12.9716°</small>
+            </label>
+
+            <label>
+              Longitude (decimal degrees)
+              <input id="input-longitude" type="number" step="0.000001" min="-180" max="180" required />
+              <small class="field-hint">East positive. Bengaluru ≈ 77.5946°</small>
+            </label>
+          </div>
+
+          <fieldset class="advanced-config">
+            <legend>Calculation Configuration</legend>
+            <div class="form-grid small">
+              <label>
+                Ayanamsha
+                <select id="config-ayanamsha">
+                  <option value="lahiri" selected>Lahiri (Chitrapaksha)</option>
+                  <option value="raman">Raman</option>
+                  <option value="krishnamurti">Krishnamurti</option>
+                </select>
+              </label>
+              <label>
+                Sunrise Method
+                <select id="config-sunrise">
+                  <option value="noaa" selected>NOAA (−0.833° altitude)</option>
+                  <option value="upper-limb">Upper Limb</option>
+                </select>
+              </label>
+              <label>
+                Precision (display)
+                <select id="config-precision">
+                  <option value="2">2 decimals</option>
+                  <option value="4" selected>4 decimals</option>
+                  <option value="6">6 decimals</option>
+                </select>
+              </label>
+              <label>
+                Validation Mode
+                <select id="config-validation">
+                  <option value="off" selected>Off</option>
+                  <option value="on">On (show all intermediates)</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-button">
+              Run Full Pipeline <span>↗</span>
+            </button>
+            <button type="button" class="secondary-button" id="btn-reset">Clear</button>
+          </div>
+
+          <p class="error" id="error-message" role="alert" hidden></p>
+        </form>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- SECTION 1: NORMAL TIME → LMT                                     -->
+      <!-- ================================================================ -->
+      <div class="pipeline-arrow">↓</div>
+
+      <section class="panel section-panel" id="section-1" data-section="1">
+        <div class="panel-heading section-heading">
+          <span class="step badge-1">1</span>
+          <div>
+            <h3>Normal Time → LMT</h3>
+            <p>Correct standard/zone time to local mean time by longitude</p>
+          </div>
+        </div>
+
+        <div class="section-content" id="sec1-content">
+          <div class="section-empty">
+            <p>Run the pipeline to compute Section 1.</p>
+          </div>
+        </div>
+
+        <details class="calc-details" id="sec1-details">
+          <summary>Calculation Details ▼</summary>
+          <div class="details-body" id="sec1-details-body">
+            <p>Run the pipeline to see calculation steps.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- SECTION 2: UDAYADHI NĀḻIKE                                       -->
+      <!-- ================================================================ -->
+      <div class="pipeline-arrow">↓</div>
+
+      <section class="panel section-panel" id="section-2" data-section="2">
+        <div class="panel-heading section-heading">
+          <span class="step badge-2">2</span>
+          <div>
+            <h3>Udayadhi Nāḻike</h3>
+            <p>Elapsed time from sunrise in traditional nāḻike / vināḍi units</p>
+          </div>
+        </div>
+
+        <div class="section-content" id="sec2-content">
+          <div class="section-empty">
+            <p>Section 2 requires Section 1 (LMT) output. Run the pipeline.</p>
+          </div>
+        </div>
+
+        <details class="calc-details" id="sec2-details">
+          <summary>Calculation Details ▼</summary>
+          <div class="details-body" id="sec2-details-body">
+            <p>Run the pipeline to see calculation steps.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- SECTION 3: LAGNA PULLI                                           -->
+      <!-- ================================================================ -->
+      <div class="pipeline-arrow">↓</div>
+
+      <section class="panel section-panel" id="section-3" data-section="3">
+        <div class="panel-heading section-heading">
+          <span class="step badge-3">3</span>
+          <div>
+            <h3>Lagna Pulli</h3>
+            <p>Precise ascendant point and rāśi from LMT + sidereal time</p>
+          </div>
+        </div>
+
+        <div class="section-content" id="sec3-content">
+          <div class="section-empty">
+            <p>Section 3 requires Sections 1 &amp; 2. Run the pipeline.</p>
+          </div>
+        </div>
+
+        <details class="calc-details" id="sec3-details">
+          <summary>Calculation Details ▼</summary>
+          <div class="details-body" id="sec3-details-body">
+            <p>Run the pipeline to see calculation steps.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- SECTION 4: LAGNAM NINDRA NAKSHATRA PADA                          -->
+      <!-- ================================================================ -->
+      <div class="pipeline-arrow">↓</div>
+
+      <section class="panel section-panel final" id="section-4" data-section="4">
+        <div class="panel-heading section-heading">
+          <span class="step badge-4">4</span>
+          <div>
+            <h3>Lagnam Nindra Nakshatra Pada</h3>
+            <p>Final nakshatra, lord, and pada of the lagna point</p>
+          </div>
+        </div>
+
+        <div class="section-content" id="sec4-content">
+          <div class="section-empty">
+            <p>Section 4 requires precise Lagna Pulli from Section 3. Run the pipeline.</p>
+          </div>
+        </div>
+
+        <details class="calc-details" id="sec4-details">
+          <summary>Calculation Details ▼</summary>
+          <div class="details-body" id="sec4-details-body">
+            <p>Run the pipeline to see calculation steps.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- FINAL SUMMARY                                                    -->
+      <!-- ================================================================ -->
+      <section class="summary-panel" id="summary-panel" hidden>
+        <div class="summary-heading">
+          <p class="kicker">Pipeline output</p>
+          <h2>Jyothisha Calculation Summary</h2>
+        </div>
+
+        <div class="summary-grid" id="summary-grid"></div>
+
+        <div class="summary-actions">
+          <button type="button" class="secondary-button" id="btn-copy">Copy Results</button>
+          <button type="button" class="secondary-button" id="btn-print">Print</button>
+          <button type="button" class="secondary-button" id="btn-download">Download JSON</button>
+        </div>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- VALIDATION / AUDIT MODE EXTRA TABLE                              -->
+      <!-- ================================================================ -->
+      <section class="audit" id="audit-section" hidden>
+        <div class="audit-heading">
+          <div>
+            <p class="kicker">Validation mode · full chain</p>
+            <h2>Audit Trail · All Intermediates</h2>
+          </div>
+          <span id="audit-meta">lahiri · NOAA sunrise · internal float</span>
+        </div>
+        <div class="audit-grid" id="audit-grid"></div>
+      </section>
+
+      <footer>
+        <span>ASTRO / calculation lab</span>
+        <span>Conventions documented in <code>docs/CALCULATION_SPEC.md</code></span>
+      </footer>
+    </main>
+
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>

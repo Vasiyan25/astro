@@ -1,5 +1,5 @@
 {
-  "name": "astro",
+  "name": "jyothisha-website",
   "private": true,
   "version": "1.0.0",
   "description": "Jyothisha calculation pipeline - Normal Time -> LMT -> Udayadhi -> Lagna Pulli -> Nakshatra Pada",
